@@ -23,3 +23,18 @@ database:
 
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
+
+# Limits:
+max_nr_comments: 100
+max_comment_length: 100000
+
+# For the RSS feed:
+rss_web_master: "Carlo Hamalainen"
+rss_language: "en-US"
+rss_copyright: "Carlo Hamalainen"
+
+email_notification_from_name:     "blog"
+email_notification_from_address:  "carlo@carlo-hamalainen.net"
+
+email_notification_to_name:     "blog"
+email_notification_to_address:  "carlo@carlo-hamalainen.net"

@@ -52,6 +52,28 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+
+    , appMaxNrComments          :: Integer
+    -- ^ Maximum number of comments per post.
+    , appMaxCommentLength       :: Integer
+    -- ^ Maximum length of a comment (bytes?).
+
+    , appRssWebMaster           :: Text
+    -- ^ RSS Web master's name.
+    , appRssLanguage            :: Text
+    -- ^ RSS language, e.g. \"en-US\"
+    , appRssCopyright           :: Text
+    -- ^ RSS Copyright message.
+
+    , appEmailNotificationFromName      :: Text
+    -- ^ Email notification from-name.
+    , appEmailNotificationFromAddress   :: Text
+    -- ^ Notification from-address.
+
+    , appEmailNotificationToName        :: Text
+    -- ^ Notification to-name.
+    , appEmailNotificationToAddress     :: Text
+    -- ^ Notification to-address.
     }
 
 instance FromJSON AppSettings where
@@ -77,6 +99,19 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+
+        appMaxNrComments          <- o .: "max_nr_comments"
+        appMaxCommentLength       <- o .: "max_comment_length"
+
+        appRssWebMaster           <- o .: "rss_web_master"
+        appRssLanguage            <- o .: "rss_language"
+        appRssCopyright           <- o .: "rss_copyright"
+
+        appEmailNotificationFromName    <- o .: "email_notification_from_name"
+        appEmailNotificationFromAddress <- o .: "email_notification_from_address"
+
+        appEmailNotificationToName      <- o .: "email_notification_to_name"
+        appEmailNotificationToAddress   <- o .: "email_notification_to_address"
 
         return AppSettings {..}
 

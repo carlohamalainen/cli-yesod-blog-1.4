@@ -4,6 +4,15 @@ import Import
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
                               withSmallInput)
 
+-- Check that we can get our extra settings
+foobar :: Handler Html
+foobar = do
+    master <- getYesod
+
+    let maxNrComments = appMaxNrComments $ appSettings master
+
+    return undefined
+
 getHomeR :: Handler Html
 getHomeR = undefined
 {-

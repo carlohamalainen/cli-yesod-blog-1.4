@@ -25,3 +25,6 @@ cabal install yesod-auth
 cabal install yesod-core
 cabal install yesod-form
 cabal install yesod-static
+cabal install polyparse
+cabal install HaXml
+cabal install rss

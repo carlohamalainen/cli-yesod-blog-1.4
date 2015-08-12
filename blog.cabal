@@ -81,6 +81,7 @@ library
                  , containers
                  , vector
                  , time
+                 , rss
 
 executable         blog
     if flag(library-only)
