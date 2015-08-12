@@ -13,8 +13,12 @@ import Text.Printf
 import Yesod.ReCAPTCHA
 
 import Network.URI
+import Network.Wai
+import Network.Mail.Mime
 
 import qualified Data.List as DL
+import qualified Data.Text.Lazy as DTL
+import qualified Text.Blaze.Html.Renderer.Text as TBHRT
 
 cu :: FP.FilePath -> FP.FilePath -> FP.FilePath
 cu x y = FP.dropTrailingPathSeparator $ (FP.dropTrailingPathSeparator x) FP.</> y
@@ -178,5 +182,62 @@ getFeedR = do
     return $ RepXml $ toContent $ (RSS.showXML . RSS.rssToXML) (RSS.RSS blogTitle (fromJust $ parseURI url) blogDescription channel items)
 
 postEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
-postEntryLongR = undefined
+postEntryLongR year month day mashedTitle = do
+    e <- runDB $ getBy $ EntryYMDMashed year month day mashedTitle
 
+    settings <- appSettings <$> getYesod
+
+    let entryId = entityKey (fromJust e) -- FIXME handle the Nothing case here
+        title   = (entryTitle . entityVal) (fromJust e) -- FIXME handle the Nothing case?
+
+    ((res, commentWidget), enctype) <- runFormPost (commentForm entryId)
+    case res of
+        FormSuccess comment -> do if (DTL.length $ TBHRT.renderHtml $ commentText comment) < (fromIntegral $ appMaxCommentLength settings :: Int64)
+                                    then do ip <- fmap (show . remoteHost . reqWaiRequest) getRequest
+                                            successfulCommentPost year month day mashedTitle comment title ip
+                                    else unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectTooLong
+
+        _ -> unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectComment
+
+sendEmailNotification comment title ip = do
+    settings <- appSettings <$> getYesod
+
+    let Comment _ _ name email _ text _ = comment
+        niceEmail = maybe "<no email supplied>" id (fmap DT.unpack email)
+        subjectLine = DT.pack $ "new comment from [" ++ (DT.unpack name) ++ "] with email [" ++ niceEmail ++ "] with address [" ++ (show ip) ++ "] on post [" ++ (DT.unpack title) ++ "]"
+
+    x <- liftIO $ simpleMail (Address (Just $ appEmailNotificationFromName settings) (appEmailNotificationFromAddress settings))
+                             (Address (Just $ appEmailNotificationToName settings)   (appEmailNotificationToAddress settings))
+                             subjectLine
+                             (TBHRT.renderHtml $ text)
+                             (TBHRT.renderHtml $ text)
+                             []
+
+    liftIO $ renderSendMail x
+
+successfulCommentPost year month day mashedTitle comment title ip = do
+    _ <- runDB $ insert comment
+    sendEmailNotification comment title ip
+
+
+    defaultLayout $ do
+        setTitleI MsgCommentAdded
+        [whamlet|
+<p> Comment has been added to the moderation queue:
+
+<pre>
+    <p> Name: #{commentName comment}
+    <p> Comment: #{commentText comment}
+
+<p> Return to the post: <a href=@{EntryLongR year month day mashedTitle}>#{title}</a>
+|]
+
+unsuccessfulCommentPost commentWidget enctype formTitle = do
+    defaultLayout $ do
+        setTitleI formTitle
+        [whamlet|
+<form method=post enctype=#{enctype}>
+    ^{commentWidget}
+    <div>
+        <input type=submit value=_{MsgAddCommentButton}>
+|]

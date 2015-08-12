@@ -33,3 +33,6 @@ cabal install network-info
 cabal install yesod-recaptcha
 cabal install network
 cabal install network-uri
+cabal install blaze-html
+cabal install wai
+cabal install mime-mail

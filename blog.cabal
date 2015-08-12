@@ -88,6 +88,9 @@ library
                  , yesod-recaptcha
                  , network
                  , network-uri
+                 , blaze-html
+                 , wai
+                 , mime-mail
 
 
 executable         blog
