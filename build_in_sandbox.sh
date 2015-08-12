@@ -28,3 +28,6 @@ cabal install yesod-static
 cabal install polyparse
 cabal install HaXml
 cabal install rss
+cabal install filepath
+cabal install network-info
+cabal install yesod-recaptcha

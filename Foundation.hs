@@ -10,6 +10,12 @@ import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 
+import Yesod.ReCAPTCHA
+import qualified RecaptchaKeys as RK
+import qualified Data.Text as DT
+
+mkMessage "App" "messages" "en"
+
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
@@ -150,3 +156,8 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+
+instance YesodReCAPTCHA App where
+    recaptchaPublicKey  = return $ DT.pack RK.recaptchaPublicKey
+    recaptchaPrivateKey = return $ DT.pack RK.recaptchaPrivateKey

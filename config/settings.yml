@@ -38,3 +38,5 @@ email_notification_from_address:  "carlo@carlo-hamalainen.net"
 
 email_notification_to_name:     "blog"
 email_notification_to_address:  "carlo@carlo-hamalainen.net"
+
+base_url: "blog"

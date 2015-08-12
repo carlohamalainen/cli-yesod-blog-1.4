@@ -22,6 +22,7 @@ library
                      Settings.StaticFiles
                      Handler.Common
                      Handler.Home
+                     RecaptchaKeys
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -82,6 +83,10 @@ library
                  , vector
                  , time
                  , rss
+                 , filepath
+                 , network-info
+                 , yesod-recaptcha
+
 
 executable         blog
     if flag(library-only)

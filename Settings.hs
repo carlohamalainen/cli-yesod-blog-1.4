@@ -53,9 +53,9 @@ data AppSettings = AppSettings
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
 
-    , appMaxNrComments          :: Integer
+    , appMaxNrComments          :: Int
     -- ^ Maximum number of comments per post.
-    , appMaxCommentLength       :: Integer
+    , appMaxCommentLength       :: Int
     -- ^ Maximum length of a comment (bytes?).
 
     , appRssWebMaster           :: Text
@@ -74,6 +74,9 @@ data AppSettings = AppSettings
     -- ^ Notification to-name.
     , appEmailNotificationToAddress     :: Text
     -- ^ Notification to-address.
+
+    , appBaseUrl    :: Text
+    -- ^ Base of URL, e.g. \"blog\".
     }
 
 instance FromJSON AppSettings where
@@ -112,6 +115,8 @@ instance FromJSON AppSettings where
 
         appEmailNotificationToName      <- o .: "email_notification_to_name"
         appEmailNotificationToAddress   <- o .: "email_notification_to_address"
+
+        appBaseUrl                <- o .: "base_url"
 
         return AppSettings {..}
 
