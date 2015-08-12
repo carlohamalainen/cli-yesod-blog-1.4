@@ -6,10 +6,15 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
 
 import qualified Data.Text as DT
 import qualified System.FilePath.Posix as FP
+import qualified Text.RSS as RSS
 
 import Data.Maybe (fromJust)
 import Text.Printf
 import Yesod.ReCAPTCHA
+
+import Network.URI
+
+import qualified Data.List as DL
 
 cu :: FP.FilePath -> FP.FilePath -> FP.FilePath
 cu x y = FP.dropTrailingPathSeparator $ (FP.dropTrailingPathSeparator x) FP.</> y
@@ -127,8 +132,60 @@ getEntryLongR year month day mashedTitle = do
         $(widgetFile "homepage")
 -}
 
+-- My posts are specified by year/month/day and mashed-title, so
+-- pretend that they all happened at midday.
+midday = fromIntegral (12*3600 :: Integer)
+
+latestPost :: [Entry] -> UTCTime
+latestPost entries = DL.maximum dates
+    where dates = map dateOfPost entries :: [UTCTime]
+
+dateOfPost :: Entry -> UTCTime
+dateOfPost (Entry _ _ year month day _ _) = UTCTime (fromGregorian (fromIntegral year) (fromIntegral month) (fromIntegral day)) midday
+
+entryToItem :: String -> String -> Entry -> [RSS.ItemElem]
+entryToItem url author (Entry title mashedTitle year month day content visible) = [ RSS.Title $ DT.unpack title
+                                                                                  , RSS.Link postURI
+                                                                                  , RSS.Author author
+                                                                                  , RSS.Comments commentURI
+                                                                                  , RSS.PubDate postDateTime
+                                                                                  , RSS.Guid False postURL
+                                                                                  -- TODO , RSS.Description content
+                                                                                  ]
+    where postDateTime = UTCTime (fromGregorian (fromIntegral year) (fromIntegral month) (fromIntegral day)) midday
+          postURL = url `cu` (show year) `cu` (show month) `cu` (show day) `cu` (DT.unpack mashedTitle)
+          -- postURI = trace ("would have used: " ++ (show postURL)) $ fromJust $ parseURI "http://foo.com" -- $ parseURI postURL
+          postURI = fromJust $ parseURI postURL
+          commentURL = postURL ++ "#comments"
+          commentURI = fromJust $ parseURI commentURL
+
 getFeedR :: Handler RepXml
-getFeedR = undefined
+getFeedR = do
+    entryEntities <- runDB $ selectList [] []
+
+    base <- DT.unpack <$> baseUrl
+
+    settings <- appSettings <$> getYesod
+
+    let root = DT.unpack $ appRoot settings
+    let url = root `cu` base
+
+    let entries = reverse $ sortBy (compare `on` dateOfPost) (map entityVal entryEntities) :: [Entry]
+        author  = DT.unpack $ appRssWebMaster settings
+        items   = map (entryToItem url author) entries :: [[RSS.ItemElem]]
+
+        channel = [ RSS.Language  $ DT.unpack $ appRssLanguage      settings
+                  , RSS.Copyright $ DT.unpack $ appRssCopyright     settings
+                  , RSS.WebMaster $ DT.unpack $ appRssWebMaster     settings
+                  , RSS.LastBuildDate $ latestPost entries
+                  , RSS.Generator "rss-3000"
+                  ]
+
+    m <- getYesod
+    let blogTitle       = DT.unpack $ renderMessage m [] MsgBlogTitle
+        blogDescription = DT.unpack $ renderMessage m [] MsgBlogDescription
+
+    return $ RepXml $ toContent $ (RSS.showXML . RSS.rssToXML) (RSS.RSS blogTitle (fromJust $ parseURI url) blogDescription channel items)
 
 {-
 postHomeR :: Handler Html

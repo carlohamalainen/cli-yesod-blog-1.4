@@ -31,3 +31,5 @@ cabal install rss
 cabal install filepath
 cabal install network-info
 cabal install yesod-recaptcha
+cabal install network
+cabal install network-uri

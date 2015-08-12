@@ -86,6 +86,8 @@ library
                  , filepath
                  , network-info
                  , yesod-recaptcha
+                 , network
+                 , network-uri
 
 
 executable         blog
