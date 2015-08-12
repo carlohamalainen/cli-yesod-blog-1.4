@@ -122,16 +122,6 @@ getEntryLongR year month day mashedTitle = do
 |]
               _                                                                            -> notFound
 
-{-
-    (formWidget, formEnctype) <- generateFormPost sampleForm
-    let submission = Nothing :: Maybe (FileInfo, Text)
-        handlerName = "getHomeR" :: Text
-    defaultLayout $ do
-        aDomId <- newIdent
-        setTitle "Welcome To Yesod!"
-        $(widgetFile "homepage")
--}
-
 -- My posts are specified by year/month/day and mashed-title, so
 -- pretend that they all happened at midday.
 midday = fromIntegral (12*3600 :: Integer)
@@ -186,26 +176,6 @@ getFeedR = do
         blogDescription = DT.unpack $ renderMessage m [] MsgBlogDescription
 
     return $ RepXml $ toContent $ (RSS.showXML . RSS.rssToXML) (RSS.RSS blogTitle (fromJust $ parseURI url) blogDescription channel items)
-
-{-
-postHomeR :: Handler Html
-postHomeR = do
-    ((result, formWidget), formEnctype) <- runFormPost sampleForm
-    let handlerName = "postHomeR" :: Text
-        submission = case result of
-            FormSuccess res -> Just res
-            _ -> Nothing
-
-    defaultLayout $ do
-        aDomId <- newIdent
-        setTitle "Welcome To Yesod!"
-        $(widgetFile "homepage")
-
-sampleForm :: Form (FileInfo, Text)
-sampleForm = renderBootstrap3 BootstrapBasicForm $ (,)
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField (withSmallInput "What's on the file?") Nothing
--}
 
 postEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
 postEntryLongR = undefined
