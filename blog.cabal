@@ -91,6 +91,10 @@ library
                  , blaze-html
                  , wai
                  , mime-mail
+                 , process
+                 , blaze-markup
+                 , transformers
+                 , resourcet
 
 
 executable         blog
@@ -100,6 +104,55 @@ executable         blog
     main-is:           main.hs
     hs-source-dirs:    app
     build-depends:     base, blog
+
+    ghc-options:       -threaded -O2 -rtsopts -with-rtsopts=-N
+
+executable         blog-utils
+    if flag(library-only)
+        Buildable: False
+
+    main-is:           utils.hs
+    hs-source-dirs:    utils
+
+    extensions: TemplateHaskell
+                QuasiQuotes
+                OverloadedStrings
+                NoImplicitPrelude
+                CPP
+                MultiParamTypeClasses
+                TypeFamilies
+                GADTs
+                GeneralizedNewtypeDeriving
+                FlexibleContexts
+                EmptyDataDecls
+                NoMonomorphismRestriction
+                DeriveDataTypeable
+                ViewPatterns
+                TupleSections
+                RecordWildCards
+
+    build-depends:     base
+                     , blog
+                     , yesod
+                     , persistent
+                     , persistent-sqlite
+                     , persistent-template
+                     , time
+                     , process
+                     , filepath
+                     , directory
+                     , bytestring
+                     , containers
+                     , text
+                     , blaze-markup
+                     , blaze-html
+                     , transformers
+                     , monad-control
+                     , resourcet
+                     , monad-logger
+                     , rss
+                     , network-uri
+                     , safe
 
     ghc-options:       -threaded -O2 -rtsopts -with-rtsopts=-N
 

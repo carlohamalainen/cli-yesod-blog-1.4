@@ -40,3 +40,36 @@ email_notification_to_name:     "blog"
 email_notification_to_address:  "carlo@carlo-hamalainen.net"
 
 base_url: "blog"
+
+Production:
+    approot: "http://carlo-hamalainen.net"
+
+    static-dir:     "_env:STATIC_DIR:static"
+    host:           "_env:HOST:*4" # any IPv4 host
+    port:           3000
+    approot:        "_env:APPROOT:http://localhost:3000"
+    ip-from-header: "_env:IP_FROM_HEADER:false"
+
+    database:
+      database: "_env:SQLITE_DATABASE:blog.sqlite3"
+      poolsize: "_env:SQLITE_POOLSIZE:10"
+
+    copyright: Insert copyright statement here
+    #analytics: UA-YOURCODE
+
+    # Limits:
+    max_nr_comments: 100
+    max_comment_length: 100000
+
+    # For the RSS feed:
+    rss_web_master: "Carlo Hamalainen"
+    rss_language: "en-US"
+    rss_copyright: "Carlo Hamalainen"
+
+    email_notification_from_name:     "blog"
+    email_notification_from_address:  "carlo@carlo-hamalainen.net"
+
+    email_notification_to_name:     "blog"
+    email_notification_to_address:  "carlo@carlo-hamalainen.net"
+
+    base_url: "blog"
