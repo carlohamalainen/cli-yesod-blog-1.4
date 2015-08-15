@@ -166,9 +166,13 @@ blah = do
 
 
 -- http://stackoverflow.com/questions/19861914/yesod-how-to-show-the-pure-value-of-a-persistint64-key
--- unKey has gone away, so use toPathPiece.
-unKey' :: PathPiece (Key a) => Key a -> Text
-unKey' = toPathPiece
+-- unKey has gone away, so use toPathPiece?
+-- unKey' :: PathPiece (Key a) => Key a -> Text
+-- unKey' = toPathPiece
+
+-- Actually, there is now fromSqlKey and toSqlKey so just use them.
+unKey' :: ToBackendKey SqlBackend record => Key record -> Text
+unKey' = DT.pack . show . fromSqlKey
 
 printBlogPost :: Key Entry -> Entry -> IO ()
 printBlogPost eid (Entry title mashedTitle year month day content visible) = do
