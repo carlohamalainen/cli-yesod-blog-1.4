@@ -36,3 +36,5 @@ cabal install network-uri
 cabal install blaze-html
 cabal install wai
 cabal install mime-mail
+
+cabal install
