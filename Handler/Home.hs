@@ -35,96 +35,6 @@ commentForm entryId = renderDivs $ Comment
     <*> areq htmlField (fieldSettingsLabel MsgCommentText) Nothing
     <*> pure False <* recaptchaAForm
 
-getHomeR :: Handler RepHtml
-getHomeR = do
-    master <- getYesod
-
-    entries <- runDB $ selectList [EntryVisible ==. True] [ Desc EntryPostedYear
-                                                          , Desc EntryPostedMonth
-                                                          , Desc EntryPostedDay
-                                                          ]
-
-    let entriesAsTuples = map deconstructEntryEntity entries
-
-    let url = DT.unpack $ appRoot $ appSettings master
-
-    base <- DT.unpack <$> baseUrl
-
-    let feedUrl = url `cu` base `cu` "feed"
-
-    defaultLayout $ do
-        setTitleI MsgWelcomeHomepage
-        [whamlet|
-
-<h1><a href=#{url}>_{MsgBlogTitle}</a>
-<hr>
-$if null entries
-    <p>_{MsgNoEntries}
-$else
-    <ul>
-        $forall (title, mashedTitle, year, month, mm, day, dd, content, visible) <- entriesAsTuples
-            <li> <a href=@{EntryLongR year month day mashedTitle}>#{year}-#{mm}-#{dd} #{title}</a>
-
-<p> <a href="#{feedUrl}">Posts: RSS</a>
-
-|]
-
-    -- This deconstruction to a tuple is a bit clunky, but I can't work out how to put
-    -- the printf into the #{mm} in the hamlet.
-    where deconstructEntryEntity (Entity _ (Entry title mashedTitle year month day content visible)) = (title, mashedTitle, year, month, printf "%02d" month :: String, day, printf "%02d" day :: String, content, visible)
-
-getEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
-getEntryLongR year month day mashedTitle = do
-    e <- runDB $ getBy $ EntryYMDMashed year month day mashedTitle
-
-    url <- (DT.unpack . appRoot . appSettings) <$> getYesod
-
-    case e of (Just (Entity eid (Entry title' mashedTitle' year' month' day' content' True)))     -> do comments <- runDB $ selectList [CommentEntry ==. eid, CommentVisible ==. True] [Asc CommentPosted]
-
-                                                                                                        maxNrComments <- (appMaxNrComments . appSettings) <$> getYesod
-                                                                                                        let commentsOpen = length comments < maxNrComments
-                                                                                                        base <- DT.unpack <$> baseUrl
-
-                                                                                                        (commentWidget, enctype) <- generateFormPost (commentForm eid)
-
-                                                                                                        let dateString = printf "%04d-%02d-%02d" year' month' day' :: String
-
-                                                                                                        defaultLayout $ do
-                                                                                                            setTitleI title'
-                                                                                                            [whamlet|
-<p align="right"><h1><a href=#{cu url base}>_{MsgBlogTitle}</a>
-<hr>
-<h1>#{title'}
-<h3>#{dateString}
-<article>#{content'}
-    <section .comments>
-        <div id="comments"></div>
-        <h2>_{MsgCommentsHeading}
-        <br>
-        $if null comments
-            <p>_{MsgNoComments}
-        $else
-            $forall Comment _entry posted name email url text visible <- map entityVal comments
-                <hr>
-                $if isNothing url
-                    <h3>#{name}
-                $else
-                    <h3><a href=#{fromJust url}>#{name}</a>
-                <h4>#{show posted}
-                <p>#{toHtml text}
-
-        $if commentsOpen
-            <section>
-                <h1>_{MsgAddCommentHeading}
-
-                <form method=post enctype=#{enctype}>
-                    ^{commentWidget}
-                    <div>
-                        <input type=submit value=_{MsgAddCommentButton}>
-        $else
-            <p> Comments are closed.
-|]
-              _                                                                            -> notFound
 
 -- My posts are specified by year/month/day and mashed-title, so
 -- pretend that they all happened at midday.
@@ -181,23 +91,97 @@ getFeedR = do
 
     return $ RepXml $ toContent $ (RSS.showXML . RSS.rssToXML) (RSS.RSS blogTitle (fromJust $ parseURI url) blogDescription channel items)
 
-postEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
-postEntryLongR year month day mashedTitle = do
+getHomeR :: Handler RepHtml
+getHomeR = do
+    master <- getYesod
+
+    entries <- runDB $ selectList [EntryVisible ==. True] [ Desc EntryPostedYear
+                                                          , Desc EntryPostedMonth
+                                                          , Desc EntryPostedDay
+                                                          ]
+
+    let entriesAsTuples = map deconstructEntryEntity entries
+
+    let url = DT.unpack $ appRoot $ appSettings master
+
+    base <- DT.unpack <$> baseUrl
+
+    let feedUrl = url `cu` base `cu` "feed"
+
+    defaultLayout $ do
+        setTitleI MsgWelcomeHomepage
+        [whamlet|
+
+<h1><a href=#{url}>_{MsgBlogTitle}</a>
+<hr>
+$if null entries
+    <p>_{MsgNoEntries}
+$else
+    <ul>
+        $forall (title, mashedTitle, year, month, mm, day, dd, content, visible) <- entriesAsTuples
+            <li> <a href=@{EntryLongR year month day mashedTitle}>#{year}-#{mm}-#{dd} #{title}</a>
+
+<p> <a href="#{feedUrl}">Posts: RSS</a>
+
+|]
+
+    -- This deconstruction to a tuple is a bit clunky, but I can't work out how to put
+    -- the printf into the #{mm} in the hamlet.
+    where deconstructEntryEntity (Entity _ (Entry title mashedTitle year month day content visible)) = (title, mashedTitle, year, month, printf "%02d" month :: String, day, printf "%02d" day :: String, content, visible)
+
+
+getEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
+getEntryLongR year month day mashedTitle = do
     e <- runDB $ getBy $ EntryYMDMashed year month day mashedTitle
 
-    settings <- appSettings <$> getYesod
+    url <- (DT.unpack . appRoot . appSettings) <$> getYesod
 
-    let entryId = entityKey (fromJust e) -- FIXME handle the Nothing case here
-        title   = (entryTitle . entityVal) (fromJust e) -- FIXME handle the Nothing case?
+    case e of (Just (Entity eid (Entry title' mashedTitle' year' month' day' content' True)))     -> do comments <- runDB $ selectList [CommentEntry ==. eid, CommentVisible ==. True] [Asc CommentPosted]
 
-    ((res, commentWidget), enctype) <- runFormPost (commentForm entryId)
-    case res of
-        FormSuccess comment -> do if (DTL.length $ TBHRT.renderHtml $ commentText comment) < (fromIntegral $ appMaxCommentLength settings :: Int64)
-                                    then do ip <- fmap (show . remoteHost . reqWaiRequest) getRequest
-                                            successfulCommentPost year month day mashedTitle comment title ip
-                                    else unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectTooLong
+                                                                                                        maxNrComments <- (appMaxNrComments . appSettings) <$> getYesod
+                                                                                                        let commentsOpen = length comments < maxNrComments
+                                                                                                        base <- DT.unpack <$> baseUrl
 
-        _ -> unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectComment
+                                                                                                        (commentWidget, enctype) <- generateFormPost (commentForm eid)
+
+                                                                                                        let dateString = printf "%04d-%02d-%02d" year' month' day' :: String
+
+                                                                                                        defaultLayout $ do
+                                                                                                            setTitleI title'
+                                                                                                            [whamlet|
+<p align="right"><h1><a href=#{cu url base}>_{MsgBlogTitle}</a>
+<hr>
+<h1>#{title'}
+<h3>#{dateString}
+<article>#{content'}
+    <section .comments>
+        <div id="comments"></div>
+        <h2>_{MsgCommentsHeading}
+        <br>
+        $if null comments
+            <p>_{MsgNoComments}
+        $else
+            $forall Comment _entry posted name email url text visible <- map entityVal comments
+                <hr>
+                $if isNothing url
+                    <h3>#{name}
+                $else
+                    <h3><a href=#{fromJust url}>#{name}</a>
+                <h4>#{show posted}
+                <p>#{toHtml text}
+
+        $if commentsOpen
+            <section>
+                <h1>_{MsgAddCommentHeading}
+
+                <form method=post enctype=#{enctype}>
+                    ^{commentWidget}
+                    <div>
+                        <input type=submit value=_{MsgAddCommentButton}>
+        $else
+            <p> Comments are closed.
+|]
+              _                                                                            -> notFound
 
 sendEmailNotification comment title ip = do
     settings <- appSettings <$> getYesod
@@ -241,3 +225,23 @@ unsuccessfulCommentPost commentWidget enctype formTitle = do
     <div>
         <input type=submit value=_{MsgAddCommentButton}>
 |]
+
+postEntryLongR :: Int -> Int -> Int -> Text -> Handler RepHtml
+postEntryLongR year month day mashedTitle = do
+    e <- runDB $ getBy $ EntryYMDMashed year month day mashedTitle
+
+    settings <- appSettings <$> getYesod
+
+    let entryId = entityKey (fromJust e) -- FIXME handle the Nothing case here
+        title   = (entryTitle . entityVal) (fromJust e) -- FIXME handle the Nothing case?
+
+    ((res, commentWidget), enctype) <- runFormPost (commentForm entryId)
+    case res of
+        FormSuccess comment -> do if (DTL.length $ TBHRT.renderHtml $ commentText comment) < (fromIntegral $ appMaxCommentLength settings :: Int64)
+                                    then do ip <- fmap (show . remoteHost . reqWaiRequest) getRequest
+                                            successfulCommentPost year month day mashedTitle comment title ip
+                                    else unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectTooLong
+
+        _ -> unsuccessfulCommentPost commentWidget enctype MsgPleaseCorrectComment
+
+
